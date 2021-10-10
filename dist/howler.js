@@ -938,6 +938,7 @@
               self._playLock = false;
               setParams();
               self._emit('play', sound._id);
+              self._loadQueue();
             }
 
             // Setting rate before playing won't work in IE, so we set it again here.
@@ -2260,6 +2261,16 @@
         self._loadFn = self._loadListener.bind(self);
         self._node.addEventListener(Howler._canPlayEvent, self._loadFn, false);
 
+        // Listen for 'play' event to let us know when sound is played.
+        // This can be triggered externally by media keys (eg. TouchBar on MacOs for instance)
+        self._playFn = self._playListener.bind(self);
+        self._node.addEventListener('play', self._playFn, false);
+
+        // Listen for 'pause' event to let us know when sound is paused.
+        // This can be triggered externally by media keys (eg. TouchBar on MacOs for instance)
+        self._pauseFn = self._pauseListener.bind(self);
+        self._node.addEventListener('pause', self._pauseFn, false);
+
         // Listen for the 'ended' event on the sound to account for edge-case where
         // a finite sound has a duration of Infinity.
         self._endFn = self._endListener.bind(self);
@@ -2340,6 +2351,24 @@
       self._node.removeEventListener(Howler._canPlayEvent, self._loadFn, false);
     },
 
+    /**
+     * HTML5 Audio play listener callback
+     * Sound is already played/paused so just update state and notify
+     */
+    _playListener: function() {
+      this._paused = false;
+      this._parent._emit('play', this._id);
+    },
+    
+    /**
+     * HTML5 Audio pause listener callback.
+     * Sound is already played/paused so just update state and notify
+     */
+    _pauseListener: function() {
+      this._paused = true;
+      this._parent._emit('pause', this._id);
+    },
+    
     /**
      * HTML5 Audio ended listener callback.
      */
